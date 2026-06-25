@@ -1,0 +1,698 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Startup Hub API — idea evaluation, investor matching, and startup discovery
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: ideas
+    description: Startup idea operations
+  - name: startups
+    description: Startup discovery operations
+  - name: investors
+    description: Investor matching operations
+  - name: dashboard
+    description: Dashboard summary operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Ideas
+  /ideas:
+    get:
+      operationId: listIdeas
+      tags: [ideas]
+      summary: List all startup ideas for current user
+      responses:
+        "200":
+          description: List of ideas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Idea"
+    post:
+      operationId: createIdea
+      tags: [ideas]
+      summary: Submit a new startup idea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIdeaBody"
+      responses:
+        "201":
+          description: Idea created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Idea"
+
+  /ideas/{id}:
+    get:
+      operationId: getIdea
+      tags: [ideas]
+      summary: Get a specific idea
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Idea detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Idea"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteIdea
+      tags: [ideas]
+      summary: Delete an idea
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # Evaluate idea
+  /evaluate-idea:
+    post:
+      operationId: evaluateIdea
+      tags: [ideas]
+      summary: Evaluate a startup idea using AI and return scoring + feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateIdeaBody"
+      responses:
+        "200":
+          description: AI evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationAIResult"
+
+  # Startups
+  /get-startups:
+    get:
+      operationId: getStartups
+      tags: [startups]
+      summary: Browse and search public startup ideas
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: stage
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of startups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Startup"
+
+  # Match investors
+  /match-investors:
+    post:
+      operationId: matchInvestors
+      tags: [investors]
+      summary: Match investors to a startup idea based on category and stage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchInvestorsBody"
+      responses:
+        "200":
+          description: Matched investors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investor"
+
+  /dashboard/investor-matches:
+    get:
+      operationId: getDashboardInvestorMatches
+      tags: [dashboard]
+      summary: Top 3 investor matches based on the user's latest evaluated idea
+      responses:
+        "200":
+          description: Top investor matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investor"
+
+  # Dashboard
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard stats for current user
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent activity feed for current user
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # Auth schemas
+    RegisterBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        name:
+          type: string
+        role:
+          type: string
+          enum: [founder, investor]
+        firm:
+          type: string
+        bio:
+          type: string
+      required: [email, password, name]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required: [user, token]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [founder, investor]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, email, name, createdAt]
+
+    # Idea schemas
+    Idea:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        stage:
+          type: string
+          enum: [idea, mvp, growth, scale]
+        evaluationScore:
+          type: number
+          nullable: true
+        evaluationFeedback:
+          type: string
+          nullable: true
+        problemClarity:
+          type: number
+          nullable: true
+          description: Sub-score 0-25
+        marketSize:
+          type: number
+          nullable: true
+          description: Sub-score 0-25
+        innovationScore:
+          type: number
+          nullable: true
+          description: Sub-score 0-25
+        executionPotential:
+          type: number
+          nullable: true
+          description: Sub-score 0-25
+        strengths:
+          type: array
+          items:
+            type: string
+          nullable: true
+        weaknesses:
+          type: array
+          items:
+            type: string
+          nullable: true
+        suggestions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        marketPotential:
+          type: string
+          nullable: true
+        isPublic:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, title, description, category, stage, isPublic, createdAt, updatedAt]
+
+    CreateIdeaBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        stage:
+          type: string
+          enum: [idea, mvp, growth, scale]
+        isPublic:
+          type: boolean
+      required: [title, description, category, stage]
+
+    EvaluateIdeaBody:
+      type: object
+      properties:
+        ideaId:
+          type: string
+          nullable: true
+        name:
+          type: string
+          description: Startup name
+        description:
+          type: string
+        target_users:
+          type: string
+          description: Who the product is built for
+        problem:
+          type: string
+          description: The core problem being solved
+        demoLink:
+          type: string
+          nullable: true
+          description: Optional link to a demo or prototype
+        category:
+          type: string
+        stage:
+          type: string
+      required: [name, description]
+
+    EvaluationAIResult:
+      type: object
+      properties:
+        problem_clarity:
+          type: number
+          description: Score for problem clarity (0-25)
+        market_size:
+          type: number
+          description: Score for market size (0-25)
+        innovation:
+          type: number
+          description: Score for innovation (0-25)
+        execution_potential:
+          type: number
+          description: Score for execution potential (0-25)
+        total_score:
+          type: number
+          description: Total score (0-100, sum of all sub-scores)
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Suggestions for improvement
+        market_potential:
+          type: string
+          enum: [low, medium, high]
+        feedback:
+          type: string
+          description: Narrative summary
+      required: [problem_clarity, market_size, innovation, execution_potential, total_score, strengths, weaknesses, suggestions, market_potential, feedback]
+
+    EvaluationResult:
+      type: object
+      properties:
+        score:
+          type: number
+          description: Overall score 0-100
+        marketPotential:
+          type: number
+        feasibility:
+          type: number
+        innovation:
+          type: number
+        competition:
+          type: number
+        feedback:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+      required: [score, marketPotential, feasibility, innovation, competition, feedback, strengths, weaknesses, recommendations]
+
+    # Startup schemas
+    Startup:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        stage:
+          type: string
+        evaluationScore:
+          type: number
+          nullable: true
+        founderName:
+          type: string
+        founderId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, description, category, stage, founderName, createdAt]
+
+    # Investor schemas
+    MatchInvestorsBody:
+      type: object
+      properties:
+        ideaId:
+          type: string
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        stage:
+          type: string
+      required: [title, description, category, stage]
+
+    Investor:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        firm:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+          description: Investment interest areas (e.g. AI, HealthTech)
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        matchScore:
+          type: number
+        whyMatch:
+          type: string
+          description: Short explanation of why this investor matches
+        bio:
+          type: string
+        contactHint:
+          type: string
+        userId:
+          type: string
+          nullable: true
+          description: Set when this match is a registered investor user
+        registered:
+          type: boolean
+          description: True if this investor has a LiftOff account and can be messaged
+      required: [id, name, firm, interests, riskLevel, matchScore, whyMatch, bio, contactHint]
+
+    # Dashboard schemas
+    ScoreBreakdown:
+      type: object
+      properties:
+        problemClarity:
+          type: number
+          nullable: true
+        marketSize:
+          type: number
+          nullable: true
+        innovation:
+          type: number
+          nullable: true
+        executionPotential:
+          type: number
+          nullable: true
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalIdeas:
+          type: integer
+        evaluatedIdeas:
+          type: integer
+        averageScore:
+          type: number
+          nullable: true
+        topCategory:
+          type: string
+          nullable: true
+        investorMatches:
+          type: integer
+        avgBreakdown:
+          $ref: "#/components/schemas/ScoreBreakdown"
+      required: [totalIdeas, evaluatedIdeas, investorMatches]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [idea_submitted, idea_evaluated, investor_matched]
+        title:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, title, description, createdAt]
